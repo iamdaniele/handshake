@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,16 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				chat: {
+					user: '#F0F4F9',
+					bot: '#FFFFFF',
+					border: '#E5E7EB'
+				},
+				loading: {
+					dot1: '#E5E7EB',
+					dot2: '#D1D5DB',
+					dot3: '#9CA3AF'
 				}
 			},
 			borderRadius: {
@@ -84,11 +95,37 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-opacity': {
+					'0%, 100%': { opacity: '0.4' },
+					'50%': { opacity: '0.8' }
+				},
+				'fade-in': {
+					'0%': { opacity: '0', transform: 'translateY(10px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' },
+				},
+				'slide-up': {
+					'0%': { transform: 'translateY(10px)' },
+					'100%': { transform: 'translateY(0)' },
+				},
+				'loading-dot': {
+					'0%, 80%, 100%': { transform: 'scale(0)' },
+					'40%': { transform: 'scale(1.0)' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-opacity': 'pulse-opacity 1.5s ease-in-out infinite',
+				'fade-in': 'fade-in 0.3s ease-out',
+				'slide-up': 'slide-up 0.2s ease-out',
+				'loading-dot-1': 'loading-dot 1.4s infinite ease-in-out',
+				'loading-dot-2': 'loading-dot 1.4s infinite ease-in-out 0.2s',
+				'loading-dot-3': 'loading-dot 1.4s infinite ease-in-out 0.4s'
+			},
+			boxShadow: {
+				'message': '0 1px 2px rgba(0, 0, 0, 0.05)',
+				'input': '0 2px 6px rgba(0, 0, 0, 0.05)',
 			}
 		}
 	},

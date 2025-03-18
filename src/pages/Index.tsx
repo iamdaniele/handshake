@@ -1,11 +1,176 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
+import { Message } from '@/types/chat';
+import { submitMessage, pollForResult } from '@/utils/api';
+import ChatMessage from '@/components/ChatMessage';
+import ChatInput from '@/components/ChatInput';
 
 const Index = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom of chat when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleSendMessage = async (content: string) => {
+    if (isProcessing) return;
+
+    // Create user message
+    const userMessage: Message = {
+      id: `user_${Date.now()}`,
+      content,
+      sender: 'user',
+      timestamp: new Date(),
+    };
+
+    // Add user message to state
+    setMessages(prev => [...prev, userMessage]);
+    
+    try {
+      setIsProcessing(true);
+      
+      // Create placeholder for bot response
+      const placeholderMessage: Message = {
+        id: `bot_${Date.now()}`,
+        content: '',
+        sender: 'bot',
+        timestamp: new Date(),
+        isLoading: true,
+      };
+      
+      // Add placeholder message for bot's response
+      setMessages(prev => [...prev, placeholderMessage]);
+      
+      // Submit message to API
+      const response = await submitMessage({ message: content });
+      setCurrentRequestId(response.id);
+      
+      // Start polling for results
+      await pollUntilComplete(response.id, placeholderMessage.id);
+      
+    } catch (error) {
+      console.error('Error in send message flow:', error);
+      // Show error toast
+      toast({
+        title: 'Error',
+        description: 'Failed to process your message. Please try again.',
+        variant: 'destructive',
+      });
+      
+      // Remove loading message
+      setMessages(prev => prev.filter(msg => !msg.isLoading));
+      
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const pollUntilComplete = async (requestId: string, messageId: string) => {
+    let isComplete = false;
+    let attempts = 0;
+    const maxAttempts = 20; // Prevent infinite polling
+    
+    while (!isComplete && attempts < maxAttempts) {
+      attempts++;
+      
+      const result = await pollForResult(requestId);
+      
+      if (result.status === 'complete' && result.answer) {
+        // Update bot message with the result
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === messageId 
+              ? { ...msg, content: result.answer!, isLoading: false } 
+              : msg
+          )
+        );
+        isComplete = true;
+        setCurrentRequestId(null);
+      } else if (result.status === 'error') {
+        // Handle error
+        toast({
+          title: 'Error',
+          description: result.error || 'An error occurred while retrieving the response.',
+          variant: 'destructive',
+        });
+        
+        // Remove loading message
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+        isComplete = true;
+        setCurrentRequestId(null);
+      } else {
+        // If still pending, wait before polling again
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    if (!isComplete) {
+      // Handle case where polling exceeded max attempts
+      toast({
+        title: 'Timeout',
+        description: 'Request is taking longer than expected. Please try again.',
+        variant: 'destructive',
+      });
+      
+      // Remove loading message
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+      setCurrentRequestId(null);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-8">
+      <div className="mx-auto w-full max-w-3xl flex flex-col flex-1">
+        <header className="text-center mb-8">
+          <h1 className="text-2xl font-medium text-gray-900 mb-2">ChatBot Interface</h1>
+          <p className="text-gray-500 text-sm">Send a message and the bot will respond</p>
+        </header>
+        
+        <div className="flex-1 flex flex-col justify-between glass-panel rounded-2xl p-4 md:p-6 shadow-sm overflow-hidden">
+          {/* Chat messages */}
+          <div 
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto mb-4"
+          >
+            {messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center p-6">
+                <p className="text-gray-400 text-center">
+                  Send a message to start the conversation
+                </p>
+              </div>
+            ) : (
+              <div className="py-4">
+                {messages.map(message => (
+                  <ChatMessage 
+                    key={message.id} 
+                    message={message}
+                  />
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+          
+          {/* Chat input */}
+          <ChatInput 
+            onSendMessage={handleSendMessage} 
+            isProcessing={isProcessing}
+          />
+        </div>
       </div>
     </div>
   );
