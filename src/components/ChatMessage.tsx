@@ -25,7 +25,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         )}
       >
         {message.isLoading ? (
-          <LoadingIndicator />
+          <LoadingIndicator className="py-2" />
         ) : (
           <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
         )}
