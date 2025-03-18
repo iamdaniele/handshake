@@ -1,7 +1,8 @@
 
 import React, { useState, FormEvent, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { PaperPlaneIcon } from 'lucide-react';
+import { Send } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -73,7 +74,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isProcessing }) =>
             : "bg-muted text-muted-foreground"
         )}
       >
-        <PaperPlaneIcon size={18} />
+        <Send size={18} />
       </Button>
     </form>
   );
