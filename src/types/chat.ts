@@ -10,12 +10,15 @@ export interface Message {
 export interface ApiRequest {
   message: string;
   userId?: string;
+  chatId?: string;
+  runId?: string; // For continuing conversations
 }
 
 export interface ApiResponse {
   id: string;
   answer: string;
   status: 'complete' | 'pending' | 'error';
+  chatId?: string;
 }
 
 export interface PollingResult {

@@ -1,16 +1,16 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { Message } from '@/types/chat';
-import { submitMessage, pollForResult } from '@/utils/api';
+import { submitMessage, pollForResult, continueConversation } from '@/utils/api';
 import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
 
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  const [currentRunId, setCurrentRunId] = useState<string | null>(null);
+  const [chatId, setChatId] = useState<string>(`chat_${Date.now()}`);
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -55,9 +55,24 @@ const Index = () => {
       // Add placeholder message for bot's response
       setMessages(prev => [...prev, placeholderMessage]);
       
-      // Submit message to API
-      const response = await submitMessage({ message: content });
-      setCurrentRequestId(response.id);
+      let response;
+      
+      // Check if we're continuing a conversation or starting a new one
+      if (currentRunId) {
+        // Continue conversation with the existing run ID
+        response = await continueConversation(currentRunId, content);
+      } else {
+        // Start a new conversation
+        response = await submitMessage({ message: content, chatId });
+        
+        // Save the chat ID if one is returned
+        if (response.chatId) {
+          setChatId(response.chatId);
+        }
+      }
+      
+      // Set the current run ID
+      setCurrentRunId(response.id);
       
       // Start polling for results
       await pollUntilComplete(response.id, placeholderMessage.id);
@@ -79,15 +94,15 @@ const Index = () => {
     }
   };
 
-  const pollUntilComplete = async (requestId: string, messageId: string) => {
+  const pollUntilComplete = async (runId: string, messageId: string) => {
     let isComplete = false;
     let attempts = 0;
-    const maxAttempts = 20; // Prevent infinite polling
+    const maxAttempts = 30; // Allow more attempts for real API
     
     while (!isComplete && attempts < maxAttempts) {
       attempts++;
       
-      const result = await pollForResult(requestId);
+      const result = await pollForResult(runId);
       
       if (result.status === 'complete' && result.answer) {
         // Update bot message with the result
@@ -99,7 +114,6 @@ const Index = () => {
           )
         );
         isComplete = true;
-        setCurrentRequestId(null);
       } else if (result.status === 'error') {
         // Handle error
         toast({
@@ -111,7 +125,6 @@ const Index = () => {
         // Remove loading message
         setMessages(prev => prev.filter(msg => msg.id !== messageId));
         isComplete = true;
-        setCurrentRequestId(null);
       } else {
         // If still pending, wait before polling again
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -128,7 +141,6 @@ const Index = () => {
       
       // Remove loading message
       setMessages(prev => prev.filter(msg => msg.id !== messageId));
-      setCurrentRequestId(null);
     }
   };
 
@@ -136,8 +148,8 @@ const Index = () => {
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="mx-auto w-full max-w-3xl flex flex-col flex-1">
         <header className="text-center mb-8">
-          <h1 className="text-2xl font-medium text-gray-900 mb-2">ChatBot Interface</h1>
-          <p className="text-gray-500 text-sm">Send a message and the bot will respond</p>
+          <h1 className="text-2xl font-medium text-gray-900 mb-2">Contact Intelligence Chat</h1>
+          <p className="text-gray-500 text-sm">Ask questions about your network and contacts</p>
         </header>
         
         <div className="flex-1 flex flex-col justify-between glass-panel rounded-2xl p-4 md:p-6 shadow-sm overflow-hidden">
@@ -149,7 +161,7 @@ const Index = () => {
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center p-6">
                 <p className="text-gray-400 text-center">
-                  Send a message to start the conversation
+                  Send a message to search your contacts and network
                 </p>
               </div>
             ) : (
