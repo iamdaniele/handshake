@@ -4,6 +4,8 @@ import { ApiRequest, ApiResponse, PollingResult } from '@/types/chat';
 // Toolhouse AI API constants
 const API_BASE_URL = 'https://api.toolhouse.ai/v1';
 const API_KEY = '198217d1-3c40-435e-be25-87f15dbd6f73';
+const CHAT_ID = '0b4f22cd-5576-4b01-a0ae-762c6040f6ba';
+const CONTACTS_URL = 'https://tmpfiles.org/22631402/connections.csv';
 
 // Helper function to create headers
 const getHeaders = () => {
@@ -23,10 +25,10 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
     
     // Prepare request body
     const requestBody = {
-      chat_id: chatId,
+      chat_id: CHAT_ID,
       vars: {
-        query: request.message,
-        contacts: "https://tmpfiles.org/22631402/connections.csv" // This could be parameterized in the future
+        question: request.message,
+        url: CONTACTS_URL,
       }
     };
     
@@ -72,7 +74,7 @@ export const pollForResult = async (runId: string): Promise<PollingResult> => {
       throw new Error(`API error: ${response.status}`);
     }
     
-    const data = await response.json();
+    const { data } = await response.json();
     console.log('Poll response:', data);
     
     // Check if the run is complete
@@ -80,13 +82,13 @@ export const pollForResult = async (runId: string): Promise<PollingResult> => {
       return {
         id: runId,
         status: 'complete',
-        answer: data.output || 'No response content available'
+        answer: data.results.pop() || 'No response content available'
       };
     } else if (data.status === 'failed') {
       return {
         id: runId,
         status: 'error',
-        error: data.error || 'The request failed'
+        error: data.results.pop() || 'No response content available'
       };
     } else {
       // Still running
