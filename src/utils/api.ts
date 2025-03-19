@@ -26,7 +26,7 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
       chat_id: chatId,
       vars: {
         query: request.message,
-        contacts: "contacts_url" // This could be parameterized in the future
+        contacts: "https://tmpfiles.org/22631402/connections.csv" // This could be parameterized in the future
       }
     };
     
