@@ -5,7 +5,7 @@ import { ApiRequest, ApiResponse, PollingResult } from '@/types/chat';
 const API_BASE_URL = 'https://api.toolhouse.ai/v1';
 const API_KEY = '198217d1-3c40-435e-be25-87f15dbd6f73';
 const CHAT_ID = '0b4f22cd-5576-4b01-a0ae-762c6040f6ba';
-const CONTACTS_URL = 'https://tmpfiles.org/22631402/connections.csv';
+const CONTACTS_URL = 'https://tmpfiles.org/dl/22631402/connections.csv';
 
 // Helper function to create headers
 const getHeaders = () => {
@@ -26,6 +26,7 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
     // Prepare request body
     const requestBody = {
       chat_id: CHAT_ID,
+      bundle: 'linkedin agent',
       vars: {
         question: request.message,
         url: CONTACTS_URL,
@@ -43,12 +44,12 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
       throw new Error(`API error: ${response.status}`);
     }
     
-    const data = await response.json();
+    const { data } = await response.json();
     console.log('Received response:', data);
     
     // Return with the run_id from the response
     return {
-      id: data.run_id,
+      id: data.id,
       answer: '', // Initially empty because we need to poll
       status: 'pending',
       chatId: chatId
@@ -79,16 +80,17 @@ export const pollForResult = async (runId: string): Promise<PollingResult> => {
     
     // Check if the run is complete
     if (data.status === 'completed') {
+      const answer = data.results.pop().content[0].text;
       return {
         id: runId,
         status: 'complete',
-        answer: data.results.pop() || 'No response content available'
+        answer: answer || 'No response content available'
       };
     } else if (data.status === 'failed') {
       return {
         id: runId,
         status: 'error',
-        error: data.results.pop() || 'No response content available'
+        error: JSON.stringify(data.results.pop()) || 'No response content available'
       };
     } else {
       // Still running
@@ -117,6 +119,7 @@ export const continueConversation = async (runId: string, message: string): Prom
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
+        bundle: 'linkedin agent',
         message: message
       })
     });
