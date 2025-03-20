@@ -5,10 +5,16 @@ import { Message } from '@/types/chat';
 import LoadingIndicator from './LoadingIndicator';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { ComponentPropsWithoutRef } from 'react';
 
 interface ChatMessageProps {
   message: Message;
 }
+
+// Define types for the markdown components
+type CodeProps = ComponentPropsWithoutRef<'code'> & {
+  inline?: boolean;
+};
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.sender === 'user';
@@ -41,7 +47,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 mt-3" {...props} />,
                 h3: ({ node, ...props }) => <h3 className="text-md font-bold mb-2 mt-3" {...props} />,
                 h4: ({ node, ...props }) => <h4 className="font-bold mb-2 mt-3" {...props} />,
-                code: ({ node, inline, ...props }) => 
+                code: ({ inline, ...props }: CodeProps) => 
                   inline ? 
                     <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props} /> : 
                     <code className="block bg-gray-100 p-2 rounded text-sm overflow-x-auto mb-2" {...props} />,
