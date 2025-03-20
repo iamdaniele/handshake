@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
@@ -147,11 +148,20 @@ const Index = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="mx-auto w-full max-w-3xl flex flex-col flex-1">
-        <header className="text-center mb-8">
-          <h1 className="text-2xl font-medium text-gray-900 mb-2">Handshake 🤝</h1>
-          <p className="text-gray-500 text-sm">Search my Linkedin contacts and I'll make an intro for you!</p>
-          <h1 className="text-2xl font-medium text-gray-900 mb-2">Built with <a target="_blank" href="https://toolhouse.ai"><b>Toolhouse</b></a></h1>
-          <p className="text-blue-500 text-sm"><a target="_blank" href="https://app.toolhouse.ai/chat/69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b">Clone this agent for FREE</a> </p>
+        <header className="text-center mb-8 bg-white/70 p-5 rounded-xl shadow-sm backdrop-blur-sm">
+          <h1 className="text-3xl font-semibold text-gray-900 mb-3">Handshake 🤝</h1>
+          <p className="text-gray-600 mb-4">Search my Linkedin contacts and I'll make an intro for you!</p>
+          <div className="flex flex-col md:flex-row items-center justify-center space-y-2 md:space-y-0 md:space-x-3">
+            <p className="text-gray-700">Built with <a href="https://toolhouse.ai" target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 hover:underline transition-all">Toolhouse</a></p>
+            <a 
+              href="https://app.toolhouse.ai/chat/69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline transition-all"
+            >
+              Clone this agent for FREE
+            </a>
+          </div>
         </header>
         
         <div className="flex-1 flex flex-col justify-between glass-panel rounded-2xl p-4 md:p-6 shadow-sm overflow-hidden">
