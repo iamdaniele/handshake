@@ -123,8 +123,8 @@ export const continueConversation = async (runId: string, message: string): Prom
     console.log('Continuing conversation for run:', runId);
     
     // Make API call to update the run with a new message
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs/${runId}/continue`, {
-      method: 'POST',
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs/${runId}`, {
+      method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
         bundle: import.meta.env.VITE_BUNDLE_NAME,
