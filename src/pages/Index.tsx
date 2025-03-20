@@ -148,8 +148,10 @@ const Index = () => {
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="mx-auto w-full max-w-3xl flex flex-col flex-1">
         <header className="text-center mb-8">
-          <h1 className="text-2xl font-medium text-gray-900 mb-2">Contact Intelligence Chat</h1>
-          <p className="text-gray-500 text-sm">Ask questions about your network and contacts</p>
+          <h1 className="text-2xl font-medium text-gray-900 mb-2">Handshake 🤝</h1>
+          <p className="text-gray-500 text-sm">Search my Linkedin contacts and I'll make an intro for you!</p>
+          <h1 className="text-2xl font-medium text-gray-900 mb-2">Built with <a target="_blank" href="https://toolhouse.ai"><b>Toolhouse</b></a></h1>
+          <p className="text-blue-500 text-sm"><a target="_blank" href="https://app.toolhouse.ai/chat/69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b">Clone this agent for FREE</a> </p>
         </header>
         
         <div className="flex-1 flex flex-col justify-between glass-panel rounded-2xl p-4 md:p-6 shadow-sm overflow-hidden">
@@ -161,7 +163,7 @@ const Index = () => {
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center p-6">
                 <p className="text-gray-400 text-center">
-                  Send a message to search your contacts and network
+                  Who do you want to meet?
                 </p>
               </div>
             ) : (

@@ -3,8 +3,8 @@ import { ApiRequest, ApiResponse, PollingResult } from '@/types/chat';
 
 // Toolhouse AI API constants
 const API_BASE_URL = 'https://api.toolhouse.ai/v1';
-const API_KEY = '198217d1-3c40-435e-be25-87f15dbd6f73';
-const CHAT_ID = '0b4f22cd-5576-4b01-a0ae-762c6040f6ba';
+const API_KEY = '7685ad3f9b8a3a476cf93f08752df9ca';
+const CHAT_ID = '69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b';
 const CONTACTS_URL = 'https://img.toolhouse.ai/Connections.csv';
 const BUNDLE_NAME = 'linkedin agent';
 
