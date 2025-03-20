@@ -77,17 +77,28 @@ export const pollForResult = async (runId: string): Promise<PollingResult> => {
     
     // Check if the run is complete
     if (data.status === 'completed') {
-      const answer = data.results.pop().content[0].text;
+      // Safely handle the case where results might be empty or in a different format
+      const results = data.results || [];
+      const lastResult = results.length > 0 ? results[results.length - 1] : null;
+      const content = lastResult && lastResult.content && lastResult.content.length > 0 
+        ? lastResult.content[0].text 
+        : 'No response content available';
+        
       return {
         id: runId,
         status: 'complete',
-        answer: answer || 'No response content available'
+        answer: content
       };
     } else if (data.status === 'failed') {
+      // Safely handle failed state
+      const results = data.results || [];
+      const lastResult = results.length > 0 ? results[results.length - 1] : null;
+      const errorContent = lastResult ? JSON.stringify(lastResult) : 'No error details available';
+      
       return {
         id: runId,
         status: 'error',
-        error: JSON.stringify(data.results.pop()) || 'No response content available'
+        error: errorContent
       };
     } else {
       // Still running
@@ -112,8 +123,8 @@ export const continueConversation = async (runId: string, message: string): Prom
     console.log('Continuing conversation for run:', runId);
     
     // Make API call to update the run with a new message
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs/${runId}`, {
-      method: 'PUT',
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs/${runId}/continue`, {
+      method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
         bundle: import.meta.env.VITE_BUNDLE_NAME,

@@ -30,19 +30,19 @@ const Index = () => {
   const handleSendMessage = async (content: string) => {
     if (isProcessing) return;
 
-    // Create user message
-    const userMessage: Message = {
-      id: `user_${Date.now()}`,
-      content,
-      sender: 'user',
-      timestamp: new Date(),
-    };
-
-    // Add user message to state
-    setMessages(prev => [...prev, userMessage]);
-    
     try {
       setIsProcessing(true);
+      
+      // Create user message
+      const userMessage: Message = {
+        id: `user_${Date.now()}`,
+        content,
+        sender: 'user',
+        timestamp: new Date(),
+      };
+
+      // Add user message to state
+      setMessages(prev => [...prev, userMessage]);
       
       // Create placeholder for bot response
       const placeholderMessage: Message = {
@@ -60,9 +60,11 @@ const Index = () => {
       
       // Check if we're continuing a conversation or starting a new one
       if (currentRunId) {
+        console.log('Continuing conversation with run ID:', currentRunId);
         // Continue conversation with the existing run ID
         response = await continueConversation(currentRunId, content);
       } else {
+        console.log('Starting new conversation');
         // Start a new conversation
         response = await submitMessage({ message: content, chatId });
         
@@ -74,6 +76,7 @@ const Index = () => {
       
       // Set the current run ID
       setCurrentRunId(response.id);
+      console.log('Set current run ID to:', response.id);
       
       // Start polling for results
       await pollUntilComplete(response.id, placeholderMessage.id);
@@ -97,38 +100,64 @@ const Index = () => {
 
   const pollUntilComplete = async (runId: string, messageId: string) => {
     let isComplete = false;
+    let attempts = 0;
+    const maxAttempts = 60; // 60 attempts with 1 second interval = 1 minute max polling time
     
-    while (!isComplete) {      
-      const result = await pollForResult(runId);
+    console.log('Starting polling for run ID:', runId, 'and message ID:', messageId);
+    
+    while (!isComplete && attempts < maxAttempts) {
+      attempts++;
+      console.log(`Polling attempt ${attempts} for run ID: ${runId}`);
       
-      if (result.status === 'complete' && result.answer) {
-        // Update bot message with the result
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === messageId 
-              ? { ...msg, content: result.answer!, isLoading: false } 
-              : msg
-          )
-        );
-        isComplete = true;
-      } else if (result.status === 'error') {
-        // Handle error
+      try {
+        const result = await pollForResult(runId);
+        console.log('Poll result:', result);
+        
+        if (result.status === 'complete' && result.answer) {
+          console.log('Poll complete, updating message with answer');
+          // Update bot message with the result
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === messageId 
+                ? { ...msg, content: result.answer!, isLoading: false } 
+                : msg
+            )
+          );
+          isComplete = true;
+        } else if (result.status === 'error') {
+          console.log('Poll error:', result.error);
+          // Handle error
+          toast({
+            title: 'Error',
+            description: result.error || 'An error occurred while retrieving the response.',
+            variant: 'destructive',
+          });
+          
+          // Remove loading message
+          setMessages(prev => prev.filter(msg => msg.id !== messageId));
+          isComplete = true;
+        } else {
+          console.log('Still pending, waiting before next poll');
+          // If still pending, wait before polling again
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error('Error during polling:', error);
+        // Handle unexpected errors during polling
         toast({
           title: 'Error',
-          description: result.error || 'An error occurred while retrieving the response.',
+          description: 'An unexpected error occurred while retrieving the response.',
           variant: 'destructive',
         });
         
         // Remove loading message
         setMessages(prev => prev.filter(msg => msg.id !== messageId));
         isComplete = true;
-      } else {
-        // If still pending, wait before polling again
-        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
     
     if (!isComplete) {
+      console.log('Polling timed out after max attempts');
       // Handle case where polling exceeded max attempts
       toast({
         title: 'Timeout',
