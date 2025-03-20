@@ -5,7 +5,8 @@ import { ApiRequest, ApiResponse, PollingResult } from '@/types/chat';
 const API_BASE_URL = 'https://api.toolhouse.ai/v1';
 const API_KEY = '198217d1-3c40-435e-be25-87f15dbd6f73';
 const CHAT_ID = '0b4f22cd-5576-4b01-a0ae-762c6040f6ba';
-const CONTACTS_URL = 'https://tmpfiles.org/dl/22631402/connections.csv';
+const CONTACTS_URL = 'https://img.toolhouse.ai/Connections.csv';
+const BUNDLE_NAME = 'linkedin agent';
 
 // Helper function to create headers
 const getHeaders = () => {
@@ -26,10 +27,12 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
     // Prepare request body
     const requestBody = {
       chat_id: CHAT_ID,
-      bundle: 'linkedin agent',
+      bundle: BUNDLE_NAME,
       vars: {
         question: request.message,
         url: CONTACTS_URL,
+        contact_owner_name: 'Daniele',
+        contact_owner_email: 'daniele@toolhouse.ai'
       }
     };
     
@@ -119,7 +122,7 @@ export const continueConversation = async (runId: string, message: string): Prom
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
-        bundle: 'linkedin agent',
+        bundle: BUNDLE_NAME,
         message: message
       })
     });
