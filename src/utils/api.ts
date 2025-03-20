@@ -48,7 +48,7 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
     return {
       id: data.id,
       answer: '', // Initially empty because we need to poll
-      status: 'pending',
+      status: 'in_progress',
       chatId: chatId
     };
   } catch (error) {
@@ -78,40 +78,30 @@ export const pollForResult = async (runId: string): Promise<PollingResult> => {
     // Check if the run is complete
     if (data.status === 'completed') {
       // Safely handle the case where results might be empty or in a different format
-      const results = data.results || [];
-      const lastResult = results.length > 0 ? results[results.length - 1] : null;
-      const content = lastResult && lastResult.content && lastResult.content.length > 0 
-        ? lastResult.content[0].text 
-        : 'No response content available';
-        
+      const answer = data.results[0].error ?? data.results.pop().content[0].text;
       return {
         id: runId,
-        status: 'complete',
-        answer: content
+        status: 'completed',
+        answer: answer
       };
-    } else if (data.status === 'failed') {
-      // Safely handle failed state
-      const results = data.results || [];
-      const lastResult = results.length > 0 ? results[results.length - 1] : null;
-      const errorContent = lastResult ? JSON.stringify(lastResult) : 'No error details available';
-      
+    } else if (data.status === 'failed') {      
       return {
         id: runId,
-        status: 'error',
-        error: errorContent
+        status: 'failed',
+        error: JSON.stringify(data.results)
       };
     } else {
       // Still running
       return {
         id: runId,
-        status: 'pending'
+        status: 'in_progress'
       };
     }
   } catch (error) {
     console.error('Error polling for result:', error);
     return {
       id: runId,
-      status: 'error',
+      status: 'failed',
       error: 'Failed to retrieve result from Toolhouse AI'
     };
   }
@@ -143,7 +133,7 @@ export const continueConversation = async (runId: string, message: string): Prom
     return {
       id: runId,
       answer: '', // Initially empty because we need to poll
-      status: 'pending'
+      status: 'in_progress'
     };
   } catch (error) {
     console.error('Error continuing conversation:', error);

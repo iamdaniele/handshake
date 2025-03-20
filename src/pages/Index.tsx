@@ -113,7 +113,7 @@ const Index = () => {
         const result = await pollForResult(runId);
         console.log('Poll result:', result);
         
-        if (result.status === 'complete' && result.answer) {
+        if (result.status === 'completed' && result.answer) {
           console.log('Poll complete, updating message with answer');
           // Update bot message with the result
           setMessages(prev => 
@@ -124,7 +124,7 @@ const Index = () => {
             )
           );
           isComplete = true;
-        } else if (result.status === 'error') {
+        } else if (result.status === 'failed') {
           console.log('Poll error:', result.error);
           // Handle error
           toast({

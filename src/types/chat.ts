@@ -17,13 +17,13 @@ export interface ApiRequest {
 export interface ApiResponse {
   id: string;
   answer: string;
-  status: 'complete' | 'pending' | 'error';
+  status: 'completed' | 'in_progress' | 'failed';
   chatId?: string;
 }
 
 export interface PollingResult {
   id: string;
-  status: 'complete' | 'pending' | 'error';
+  status: 'completed' | 'in_progress' | 'failed';
   answer?: string;
   error?: string;
 }
