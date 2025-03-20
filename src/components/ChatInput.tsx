@@ -12,6 +12,7 @@ interface ChatInputProps {
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isProcessing }) => {
   const [message, setMessage] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Suggestion pills data
@@ -52,12 +53,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isProcessing }) =>
     if (trimmedMessage && !isProcessing) {
       onSendMessage(trimmedMessage);
       setMessage('');
+      setShowSuggestions(false); // Hide suggestions after manual message submission
     }
   };
 
   const handleSuggestionClick = (suggestionMessage: string) => {
     if (!isProcessing) {
       onSendMessage(suggestionMessage);
+      setShowSuggestions(false); // Hide suggestions after clicking a pill
     }
   };
 
@@ -80,18 +83,20 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isProcessing }) =>
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Suggestion pills */}
-      <div className="flex flex-wrap gap-2 px-1">
-        {suggestions.map((suggestion, index) => (
-          <SuggestionPill
-            key={index}
-            label={suggestion.label}
-            message={suggestion.message}
-            icon={suggestion.icon}
-            onClick={handleSuggestionClick}
-          />
-        ))}
-      </div>
+      {/* Suggestion pills - only show if showSuggestions is true */}
+      {showSuggestions && (
+        <div className="flex flex-wrap gap-2 px-1">
+          {suggestions.map((suggestion, index) => (
+            <SuggestionPill
+              key={index}
+              label={suggestion.label}
+              message={suggestion.message}
+              icon={suggestion.icon}
+              onClick={handleSuggestionClick}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Chat input form */}
       <form 
