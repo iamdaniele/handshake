@@ -1,17 +1,10 @@
 
 import { ApiRequest, ApiResponse, PollingResult } from '@/types/chat';
 
-// Toolhouse AI API constants
-const API_BASE_URL = 'https://api.toolhouse.ai/v1';
-const API_KEY = '7685ad3f9b8a3a476cf93f08752df9ca';
-const CHAT_ID = '69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b';
-const CONTACTS_URL = 'https://img.toolhouse.ai/Connections.csv';
-const BUNDLE_NAME = 'linkedin agent';
-
 // Helper function to create headers
 const getHeaders = () => {
   return {
-    'Authorization': `Bearer ${API_KEY}`,
+    'Authorization': `Bearer ${import.meta.env.VITE_API_KEY}`,
     'Content-Type': 'application/json'
   };
 };
@@ -26,11 +19,11 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
     
     // Prepare request body
     const requestBody = {
-      chat_id: CHAT_ID,
-      bundle: BUNDLE_NAME,
+      chat_id: import.meta.env.VITE_CHAT_ID,
+      bundle: import.meta.env.VITE_BUNDLE_NAME,
       vars: {
         question: request.message,
-        url: CONTACTS_URL,
+        url: import.meta.env.VITE_CONTACTS_URL,
         contact_owner_name: 'Daniele',
         contact_owner_email: 'daniele@toolhouse.ai',
         current_date: new Date().toISOString().substring(0, 10)
@@ -38,7 +31,7 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
     };
     
     // Make API call
-    const response = await fetch(`${API_BASE_URL}/agent-runs`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(requestBody)
@@ -70,7 +63,7 @@ export const pollForResult = async (runId: string): Promise<PollingResult> => {
     console.log('Polling for result:', runId);
     
     // Make API call to get the current status
-    const response = await fetch(`${API_BASE_URL}/agent-runs/${runId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs/${runId}`, {
       method: 'GET',
       headers: getHeaders()
     });
@@ -119,11 +112,11 @@ export const continueConversation = async (runId: string, message: string): Prom
     console.log('Continuing conversation for run:', runId);
     
     // Make API call to update the run with a new message
-    const response = await fetch(`${API_BASE_URL}/agent-runs/${runId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs/${runId}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
-        bundle: BUNDLE_NAME,
+        bundle: import.meta.env.VITE_BUNDLE_NAME,
         message: message
       })
     });
