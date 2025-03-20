@@ -97,12 +97,8 @@ const Index = () => {
 
   const pollUntilComplete = async (runId: string, messageId: string) => {
     let isComplete = false;
-    let attempts = 0;
-    const maxAttempts = 30; // Allow more attempts for real API
     
-    while (!isComplete && attempts < maxAttempts) {
-      attempts++;
-      
+    while (!isComplete) {      
       const result = await pollForResult(runId);
       
       if (result.status === 'complete' && result.answer) {

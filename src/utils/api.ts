@@ -32,7 +32,8 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
         question: request.message,
         url: CONTACTS_URL,
         contact_owner_name: 'Daniele',
-        contact_owner_email: 'daniele@toolhouse.ai'
+        contact_owner_email: 'daniele@toolhouse.ai',
+        current_date: new Date().toISOString().substring(0, 10)
       }
     };
     
