@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { Message } from '@/types/chat';
-import { submitMessage, pollForResult, continueConversation } from '@/utils/api';
+import { submitMessage, continueConversation } from '@/utils/api';
 import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
 
@@ -27,6 +27,33 @@ const Index = () => {
     }
   };
 
+  // Helper to update the bot's message content with streaming chunks
+  const updateBotMessageContent = (messageId: string, content: string, append: boolean = true) => {
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId
+          ? { 
+              ...msg, 
+              content: append ? msg.content + content : content
+            }
+          : msg
+      )
+    );
+  };
+
+  // Helper to handle errors in the streaming process
+  const handleStreamError = (error: Error) => {
+    toast({
+      title: 'Error',
+      description: error.message || 'Something went wrong with the message streaming',
+      variant: 'destructive',
+    });
+    
+    // Remove any loading messages
+    setMessages(prev => prev.filter(msg => !msg.isLoading));
+    setIsProcessing(false);
+  };
+
   const handleSendMessage = async (content: string) => {
     if (isProcessing) return;
 
@@ -45,41 +72,60 @@ const Index = () => {
       setMessages(prev => [...prev, userMessage]);
       
       // Create placeholder for bot response
+      const botMessageId = `bot_${Date.now()}`;
       const placeholderMessage: Message = {
-        id: `bot_${Date.now()}`,
+        id: botMessageId,
         content: '',
         sender: 'bot',
         timestamp: new Date(),
-        isLoading: true,
+        isLoading: false, // We'll stream content instead of showing loading indicator
       };
       
       // Add placeholder message for bot's response
       setMessages(prev => [...prev, placeholderMessage]);
       
-      let response;
+      // Handle streaming chunks and update the message
+      const handleChunk = (chunk: string) => {
+        updateBotMessageContent(botMessageId, chunk);
+      };
+
+      const handleComplete = () => {
+        // Update the message to mark it as complete
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === botMessageId
+              ? { ...msg, isLoading: false }
+              : msg
+          )
+        );
+        setIsProcessing(false);
+      };
       
       // Check if we're continuing a conversation or starting a new one
       if (currentRunId) {
         console.log('Continuing conversation with run ID:', currentRunId);
-        // Continue conversation with the existing run ID
-        response = await continueConversation(currentRunId, content);
+        // Continue conversation with the existing run ID and stream the response
+        await continueConversation(
+          currentRunId,
+          content,
+          handleChunk,
+          handleComplete,
+          handleStreamError
+        );
       } else {
         console.log('Starting new conversation');
-        // Start a new conversation
-        response = await submitMessage({ message: content, chatId });
+        // Start a new conversation and stream the response
+        const runId = await submitMessage(
+          { message: content, chatId },
+          handleChunk,
+          handleComplete,
+          handleStreamError
+        );
         
-        // Save the chat ID if one is returned
-        if (response.chatId) {
-          setChatId(response.chatId);
-        }
+        // Save the run ID for future messages
+        setCurrentRunId(runId);
+        console.log('Set current run ID to:', runId);
       }
-      
-      // Set the current run ID
-      setCurrentRunId(response.id);
-      console.log('Set current run ID to:', response.id);
-      
-      // Start polling for results
-      await pollUntilComplete(response.id, placeholderMessage.id);
       
     } catch (error) {
       console.error('Error in send message flow:', error);
@@ -90,83 +136,9 @@ const Index = () => {
         variant: 'destructive',
       });
       
-      // Remove loading message
+      // Clean up on error
       setMessages(prev => prev.filter(msg => !msg.isLoading));
-      
-    } finally {
       setIsProcessing(false);
-    }
-  };
-
-  const pollUntilComplete = async (runId: string, messageId: string) => {
-    let isComplete = false;
-    let attempts = 0;
-    const maxAttempts = 60; // 60 attempts with 1 second interval = 1 minute max polling time
-    
-    console.log('Starting polling for run ID:', runId, 'and message ID:', messageId);
-    
-    while (!isComplete && attempts < maxAttempts) {
-      attempts++;
-      console.log(`Polling attempt ${attempts} for run ID: ${runId}`);
-      
-      try {
-        const result = await pollForResult(runId);
-        console.log('Poll result:', result);
-        
-        if (result.status === 'completed' && result.answer) {
-          console.log('Poll complete, updating message with answer');
-          // Update bot message with the result
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === messageId 
-                ? { ...msg, content: result.answer!, isLoading: false } 
-                : msg
-            )
-          );
-          isComplete = true;
-        } else if (result.status === 'failed') {
-          console.log('Poll error:', result.error);
-          // Handle error
-          toast({
-            title: 'Error',
-            description: result.error || 'An error occurred while retrieving the response.',
-            variant: 'destructive',
-          });
-          
-          // Remove loading message
-          setMessages(prev => prev.filter(msg => msg.id !== messageId));
-          isComplete = true;
-        } else {
-          console.log('Still pending, waiting before next poll');
-          // If still pending, wait before polling again
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      } catch (error) {
-        console.error('Error during polling:', error);
-        // Handle unexpected errors during polling
-        toast({
-          title: 'Error',
-          description: 'An unexpected error occurred while retrieving the response.',
-          variant: 'destructive',
-        });
-        
-        // Remove loading message
-        setMessages(prev => prev.filter(msg => msg.id !== messageId));
-        isComplete = true;
-      }
-    }
-    
-    if (!isComplete) {
-      console.log('Polling timed out after max attempts');
-      // Handle case where polling exceeded max attempts
-      toast({
-        title: 'Timeout',
-        description: 'Request is taking longer than expected. Please try again.',
-        variant: 'destructive',
-      });
-      
-      // Remove loading message
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
     }
   };
 

@@ -9,8 +9,13 @@ const getHeaders = () => {
   };
 };
 
-// Function to submit message to API
-export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> => {
+// Function to submit initial message to API with streaming
+export const submitMessage = async (
+  request: ApiRequest, 
+  onChunk: (chunk: string) => void,
+  onComplete: () => void,
+  onError: (error: Error) => void
+): Promise<string> => {
   try {
     console.log('Sending message to Toolhouse AI:', request.message);
     
@@ -31,7 +36,7 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
     };
     
     // Make API call
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs`, {
+    const response = await fetch(`https://agents.toolhouse.ai/69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(requestBody)
@@ -40,84 +45,67 @@ export const submitMessage = async (request: ApiRequest): Promise<ApiResponse> =
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
+
+    // Handle the stream
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Response body is not readable');
+    }
+
+    const decoder = new TextDecoder();
+    let runId = '';
+
+    // Process the stream
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        onComplete();
+        break;
+      }
+      
+      const chunk = decoder.decode(value, { stream: true });
+      onChunk(chunk);
+      
+      // Try to extract runId from the first few chunks if possible
+      if (!runId) {
+        try {
+          // Look for any JSON structure that might contain an ID
+          const matches = chunk.match(/"id":"([^"]+)"/);
+          if (matches && matches[1]) {
+            runId = matches[1];
+            console.log('Extracted runId:', runId);
+          }
+        } catch (e) {
+          console.log('Could not extract runId yet');
+        }
+      }
+    }
     
-    const { data } = await response.json();
-    console.log('Received response:', data);
-    
-    // Return with the run_id from the response
-    return {
-      id: data.id,
-      answer: '', // Initially empty because we need to poll
-      status: 'in_progress',
-      chatId: chatId
-    };
+    return runId || chatId;
   } catch (error) {
     console.error('Error submitting message:', error);
-    throw new Error('Failed to submit message to Toolhouse AI');
+    onError(error instanceof Error ? error : new Error('Unknown error'));
+    throw error;
   }
 };
 
-// Function to poll for results
-export const pollForResult = async (runId: string): Promise<PollingResult> => {
+// Function to continue a conversation by sending a follow-up message with streaming
+export const continueConversation = async (
+  runId: string,
+  message: string,
+  onChunk: (chunk: string) => void,
+  onComplete: () => void,
+  onError: (error: Error) => void
+): Promise<void> => {
   try {
-    console.log('Polling for result:', runId);
-    
-    // Make API call to get the current status
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs/${runId}`, {
-      method: 'GET',
-      headers: getHeaders()
-    });
-    
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    
-    const { data } = await response.json();
-    console.log('Poll response:', data);
-    
-    // Check if the run is complete
-    if (data.status === 'completed') {
-      // Safely handle the case where results might be empty or in a different format
-      const answer = data.results[0].error ?? data.results.pop().content[0].text;
-      return {
-        id: runId,
-        status: 'completed',
-        answer: answer
-      };
-    } else if (data.status === 'failed') {      
-      return {
-        id: runId,
-        status: 'failed',
-        error: JSON.stringify(data.results)
-      };
-    } else {
-      // Still running
-      return {
-        id: runId,
-        status: 'in_progress'
-      };
-    }
-  } catch (error) {
-    console.error('Error polling for result:', error);
-    return {
-      id: runId,
-      status: 'failed',
-      error: 'Failed to retrieve result from Toolhouse AI'
-    };
-  }
-};
-
-// Function to continue a conversation by sending a follow-up message
-export const continueConversation = async (runId: string, message: string): Promise<ApiResponse> => {
-  try {
-    console.log('Continuing conversation for run:', runId);
+    console.log('Continuing conversation with message:', message);
     
     // Make API call to update the run with a new message
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/agent-runs/${runId}`, {
+    const response = await fetch(`https://agents.toolhouse.ai/69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
-        bundle: import.meta.env.VITE_BUNDLE_NAME,
         message: message
       })
     });
@@ -125,18 +113,40 @@ export const continueConversation = async (runId: string, message: string): Prom
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
-    const data = await response.json();
-    console.log('Continue conversation response:', data);
-    
-    // Return with the same run_id to maintain conversation context
-    return {
-      id: runId,
-      answer: '', // Initially empty because we need to poll
-      status: 'in_progress'
-    };
+
+    // Handle the stream
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Response body is not readable');
+    }
+
+    const decoder = new TextDecoder();
+
+    // Process the stream
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        onComplete();
+        break;
+      }
+      
+      const chunk = decoder.decode(value, { stream: true });
+      onChunk(chunk);
+    }
   } catch (error) {
     console.error('Error continuing conversation:', error);
-    throw new Error('Failed to continue conversation with Toolhouse AI');
+    onError(error instanceof Error ? error : new Error('Unknown error'));
+    throw error;
   }
+};
+
+// This function is kept for backward compatibility if needed
+export const pollForResult = async (runId: string): Promise<PollingResult> => {
+  console.warn('pollForResult is deprecated - using streaming responses now');
+  return {
+    id: runId,
+    status: 'completed',
+    answer: 'Using streaming responses now'
+  };
 };
