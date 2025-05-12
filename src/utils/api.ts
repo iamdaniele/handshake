@@ -54,6 +54,7 @@ export const submitMessage = async (
 
     const decoder = new TextDecoder();
     let runId = '';
+    let firstChunkReceived = false;
 
     // Process the stream
     while (true) {
@@ -65,6 +66,13 @@ export const submitMessage = async (
       }
       
       const chunk = decoder.decode(value, { stream: true });
+      
+      // Mark the first chunk as received
+      if (!firstChunkReceived && chunk.trim()) {
+        firstChunkReceived = true;
+        console.log('First chunk received, should stop showing loading indicator');
+      }
+      
       onChunk(chunk);
       
       // Try to extract runId from the first few chunks if possible
@@ -121,6 +129,7 @@ export const continueConversation = async (
     }
 
     const decoder = new TextDecoder();
+    let firstChunkReceived = false;
 
     // Process the stream
     while (true) {
@@ -132,6 +141,13 @@ export const continueConversation = async (
       }
       
       const chunk = decoder.decode(value, { stream: true });
+      
+      // Mark the first chunk as received
+      if (!firstChunkReceived && chunk.trim()) {
+        firstChunkReceived = true;
+        console.log('First chunk received, should stop showing loading indicator');
+      }
+      
       onChunk(chunk);
     }
   } catch (error) {

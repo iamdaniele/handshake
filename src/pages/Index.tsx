@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
@@ -6,10 +5,12 @@ import { Message } from '@/types/chat';
 import { submitMessage, continueConversation } from '@/utils/api';
 import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
+import LoadingIndicator from '@/components/LoadingIndicator';
 
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [currentRunId, setCurrentRunId] = useState<string | null>(null);
   const [chatId, setChatId] = useState<string>(`chat_${Date.now()}`);
   const { toast } = useToast();
@@ -29,6 +30,11 @@ const Index = () => {
 
   // Helper to update the bot's message content with streaming chunks
   const updateBotMessageContent = (messageId: string, content: string, append: boolean = true) => {
+    // When we start receiving content, we're no longer in the searching state
+    if (content && isSearching) {
+      setIsSearching(false);
+    }
+    
     setMessages(prev => 
       prev.map(msg => 
         msg.id === messageId
@@ -59,6 +65,7 @@ const Index = () => {
 
     try {
       setIsProcessing(true);
+      setIsSearching(true); // Set searching state when starting to process a message
       
       // Create user message
       const userMessage: Message = {
@@ -86,6 +93,9 @@ const Index = () => {
       
       // Handle streaming chunks and update the message
       const handleChunk = (chunk: string) => {
+        if (chunk && isSearching) {
+          setIsSearching(false); // Turn off searching as soon as we get the first chunk
+        }
         updateBotMessageContent(botMessageId, chunk);
       };
 
@@ -99,6 +109,7 @@ const Index = () => {
           )
         );
         setIsProcessing(false);
+        setIsSearching(false); // Ensure searching is turned off on completion
       };
       
       // Check if we're continuing a conversation or starting a new one
@@ -139,6 +150,7 @@ const Index = () => {
       // Clean up on error
       setMessages(prev => prev.filter(msg => !msg.isLoading));
       setIsProcessing(false);
+      setIsSearching(false); // Ensure searching is turned off on error
     }
   };
 
@@ -185,6 +197,13 @@ const Index = () => {
               </div>
             )}
           </div>
+          
+          {/* Global loading indicator */}
+          {isSearching && (
+            <div className="flex justify-center items-center my-4 animate-fade-in">
+              <LoadingIndicator />
+            </div>
+          )}
           
           {/* Chat input */}
           <ChatInput 
