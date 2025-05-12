@@ -4,7 +4,6 @@ import { ApiRequest, ApiResponse, PollingResult } from '@/types/chat';
 // Helper function to create headers
 const getHeaders = () => {
   return {
-    'Authorization': `Bearer ${import.meta.env.VITE_API_KEY}`,
     'Content-Type': 'application/json'
   };
 };
@@ -36,24 +35,25 @@ export const submitMessage = async (
     };
     
     // Make API call
-    const response = await fetch(`https://agents.toolhouse.ai/69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b`, {
+    const response = await fetch(import.meta.env.VITE_TOOLHOUSE_AGENT_URL, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(requestBody)
     });
+
     
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-
+    
     // Handle the stream
     const reader = response.body?.getReader();
     if (!reader) {
       throw new Error('Response body is not readable');
     }
-
+    
     const decoder = new TextDecoder();
-    let runId = '';
+    const runId = response.headers.get('x-toolhouse-run-id');
     let firstChunkReceived = false;
 
     // Process the stream
@@ -75,22 +75,9 @@ export const submitMessage = async (
       
       onChunk(chunk);
       
-      // Try to extract runId from the first few chunks if possible
-      if (!runId) {
-        try {
-          // Look for any JSON structure that might contain an ID
-          const matches = chunk.match(/"id":"([^"]+)"/);
-          if (matches && matches[1]) {
-            runId = matches[1];
-            console.log('Extracted runId:', runId);
-          }
-        } catch (e) {
-          console.log('Could not extract runId yet');
-        }
-      }
     }
     
-    return runId || chatId;
+    return runId;
   } catch (error) {
     console.error('Error submitting message:', error);
     onError(error instanceof Error ? error : new Error('Unknown error'));
@@ -110,7 +97,7 @@ export const continueConversation = async (
     console.log('Continuing conversation with message:', message);
     
     // Make API call to update the run with a new message
-    const response = await fetch(`https://agents.toolhouse.ai/69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b`, {
+    const response = await fetch(`${import.meta.env.VITE_TOOLHOUSE_AGENT_URL}/${runId}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
