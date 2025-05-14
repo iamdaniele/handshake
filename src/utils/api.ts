@@ -18,13 +18,10 @@ export const submitMessage = async (
   try {
     console.log('Sending message to Toolhouse AI:', request.message);
     
-    // Create a unique chat ID if not provided
-    const chatId = request.chatId || `chat_${Date.now()}`;
-    
     // Prepare request body
     const requestBody = {
-      chat_id: import.meta.env.VITE_CHAT_ID,
       bundle: import.meta.env.VITE_BUNDLE_NAME,
+      env: import.meta.env.VITE_TOOLHOUSE_ENV ?? 'production',
       vars: {
         question: request.message,
         url: import.meta.env.VITE_CONTACTS_URL,
@@ -53,9 +50,8 @@ export const submitMessage = async (
     }
     
     const decoder = new TextDecoder();
-    const runId = response.headers.get('x-toolhouse-run-id');
     let firstChunkReceived = false;
-
+    
     // Process the stream
     while (true) {
       const { done, value } = await reader.read();
@@ -77,6 +73,7 @@ export const submitMessage = async (
       
     }
     
+    const runId = response.headers.get('x-toolhouse-run-id');
     return runId;
   } catch (error) {
     console.error('Error submitting message:', error);
@@ -101,6 +98,7 @@ export const continueConversation = async (
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
+        env: import.meta.env.VITE_TOOLHOUSE_ENV ?? 'production',
         message: message
       })
     });
