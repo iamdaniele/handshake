@@ -20,12 +20,11 @@ export const submitMessage = async (
     
     // Prepare request body
     const requestBody = {
-      bundle: import.meta.env.VITE_BUNDLE_NAME,
       env: import.meta.env.VITE_TOOLHOUSE_ENV ?? 'production',
       vars: {
         question: request.message,
-        contact_owner_name: 'Daniele',
-        contact_owner_email: 'daniele@toolhouse.ai',
+        contact_owner_name: import.meta.env.VITE_CONTACT_OWNER_NAME,
+        contact_owner_email: import.meta.env.VITE_CONTACT_OWNER_EMAIL,
       }
     };
     
