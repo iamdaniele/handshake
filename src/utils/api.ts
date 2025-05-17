@@ -24,10 +24,8 @@ export const submitMessage = async (
       env: import.meta.env.VITE_TOOLHOUSE_ENV ?? 'production',
       vars: {
         question: request.message,
-        url: import.meta.env.VITE_CONTACTS_URL,
         contact_owner_name: 'Daniele',
         contact_owner_email: 'daniele@toolhouse.ai',
-        current_date: new Date().toISOString().substring(0, 10)
       }
     };
     
