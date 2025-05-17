@@ -1,24 +1,23 @@
-# Welcome to your Lovable project
+# Handshake: request an intro to my Linkedin contacts
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/7e0e4d22-94e5-48cc-bf2f-3df0959e916a
+This demo shows you how to request an intro to my Linkedin contacts. Simply ask the agent if I know anyone you may be interested in, and follow its instructions.
 
-## How can I edit this code?
+This demo is powered by [Toolhouse](https://toolhouse.a.i) for the agentic backend and Lovable for the frontend.
 
-There are several ways of editing your application.
+Things you can ask:
 
-**Use Lovable**
+- Who works at OpenAI?
+- Are there any investors from 500 Global?
+- Find product people
+- What connections are from 2025?
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7e0e4d22-94e5-48cc-bf2f-3df0959e916a) and start prompting.
+**Clone this agent in Toolhouse**: https://app.toolhouse.ai/agents/69ba3e7e-d170-4a93-82d6-dc8cb0f86c7b
 
-Changes made via Lovable will be committed automatically to this repo.
+**Try it live**: https://handshake-nine.vercel.app
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+**Fork on Lovable**: https://lovable.dev/projects/7e0e4d22-94e5-48cc-bf2f-3df0959e916a
 
 Follow these steps:
 
@@ -54,16 +53,9 @@ npm run dev
 
 This project is built with .
 
+- [Toolhouse](https://toolhouse.ai)
 - Vite
 - TypeScript
 - React
 - shadcn-ui
 - Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/7e0e4d22-94e5-48cc-bf2f-3df0959e916a) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
